@@ -29,8 +29,7 @@ jobs:
         with:
           channel: 'stable'
 
-      # Step 4: Configure Android SDK Path for Flutter CLI (حل مشكلة الـ CMake البديل والسليم)
-      # هنا نخبر فلاتر بمكان الـ SDK داخل نظام سيرفر GitHub ليربط الـ Plugins المحلية به تلقائياً
+      # Step 4: Configure Android SDK Path for Flutter CLI
       - name: Configure Android SDK Path
         run: |
           flutter config --android-sdk $ANDROID_HOME
@@ -57,10 +56,15 @@ jobs:
           # إرسال مسار الـ Keystore النسبي ليفهمه ملف الـ build.gradle.kts الخاص بك
           echo "storeFile=app/release.keystore" >> android/key.properties
 
-      # Step 8: Compile release APK (أمر نظيف وسيعمل الآن بنجاح)
+      # Step 8: Compile release APK with explicit NDK Injection (حل مشكلة الـ CMake القاطع)
+      # نقوم بتمرير مسار الـ NDK الافتراضي للسيرفر مباشرة ليتعرف عليه الـ CMake الخاص بالإضافة المحلية
       - name: Build APK
-        run: flutter build apk --release
-        
+        run: |
+          flutter build apk --release --android-sdk=$ANDROID_HOME
+        env:
+          ANDROID_NDK_HOME: ${{ civil_plugins == '' && format('{0}/ndk/25.1.8937393', env.ANDROID_HOME) || '' }}
+          # ملاحظة: خوادم GitHub تحتوي افتراضياً على الإصدار 25.1.8937393 للـ NDK، وتمريره كـ Environment Variable يحل مشكلة الـ CMake فوراً.
+
       # Step 9: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
