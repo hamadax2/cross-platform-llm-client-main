@@ -42,27 +42,26 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 7: Configure Keystore and Properties to bypass Kotlin DSL Gradle check
-      - name: Configure Keystore and Properties
+      # Step 7: Configure Keystore and Android Environment Properties
+      # قمنا بدمج إعدادات الـ Keystore مع حقن مسارات الأندرويد والـ NDK لحل مشكلة الـ CMake نهائياً
+      - name: Configure Keystore and Environment Properties
         run: |
-          # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
+          # 1. فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
           
-          # إنشاء ملف key.properties في جذر مجلد android ليتوافق مع rootProject.file("key.properties")
+          # 2. إنشاء ملف key.properties في جذر مجلد android ليتوافق مع كود Gradle الخاص بك
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          
-          # إرسال مسار الـ Keystore النسبي ليفهمه ملف الـ build.gradle.kts الخاص بك
           echo "storeFile=app/release.keystore" >> android/key.properties
+          
+          # 3. إنشاء ملف local.properties وضخ مسار الـ SDK والـ NDK بشكل صريح لإجبار الـ CMake على العمل بنجاح
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "ndk.dir=$ANDROID_HOME/ndk/25.1.8937393" >> android/local.properties
 
-      # Step 8: Compile release APK with explicit NDK Injection
-      # تم تصحيح وتبسيط صياغة الـ env هنا لتمرير مسار الـ NDK المتوفر على السيرفر مباشرة بشكل سليم
+      # Step 8: Compile release APK (الآن سيعمل بنجاح تام لأن الـ CMake مجبر على قراءة المسارات المحقونة)
       - name: Build APK
-        env:
-          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25.1.8937393
-        run: |
-          flutter build apk --release
+        run: flutter build apk --release
 
       # Step 9: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
