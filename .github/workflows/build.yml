@@ -39,7 +39,7 @@ jobs:
         run: yes | flutter doctor --android-licenses
 
       # Step 6: Install and Setup the specific Android NDK needed for the :jni plugin
-      # هذا الأكشن الرسمي يقوم بتحميل وتثبيت الـ NDK المطلوب بدقة داخل الـ Runner بشكل مضمون 100%
+      # هذا الأكشن يضمن تنزيل الـ NDK في المسار الصحيح تماماً الذي يتوقعه نظام أندرويد داخل السيرفر
       - name: Setup Android NDK
         uses: android-actions/setup-android@v3
         with:
@@ -50,6 +50,7 @@ jobs:
         run: flutter pub get
 
       # Step 8: Configure Keystore and Android Environment Properties
+      # الحل الجوهري: نترك لـ Gradle مهمة العثور على الـ NDK من خلال عدم كتابة ndk.dir كـ مسار ثابت معطوب
       - name: Configure Keystore and Environment Properties
         run: |
           # 1. فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
@@ -61,9 +62,9 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=app/release.keystore" >> android/key.properties
           
-          # 3. إعداد الـ local.properties مع تمرير مسار الـ SDK والـ NDK المثبت حديثاً
+          # 3. نكتب فقط مسار الـ SDK البيئي ونحذف تماماً أي إشارة قسرية لـ ndk.dir
+          # نظام أندرويد الحديث سيبحث تلقائياً في مجلد الـ SDK ويجد الـ NDK الذي قام الأكشن بتنزيله في خطوة 6
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          echo "ndk.dir=$ANDROID_HOME/ndk/25.1.8937393" >> android/local.properties
 
       # Step 9: Compile release APK with verification bypass flag
       - name: Build APK
