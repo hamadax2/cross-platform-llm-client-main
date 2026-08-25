@@ -38,17 +38,17 @@ jobs:
       - name: Accept Android Licenses
         run: yes | flutter doctor --android-licenses
 
-      # Step 6: Force Install the exact NDK version into the system's SDK path
-      # هنا نقوم بإجبار خادم GitHub على تنزيل الإصدار المتوافق داخل المجلد الافتراضي مباشرة وتحديثه
-      - name: Force Install Exact NDK Version
+      # Step 6: Install BOTH NDK versions needed by your local plugins into the system
+      # نقوم بتثبيت الإصدارين (28 لـ jni والإصدار 27 لـ llama_flutter) ليجدهما الأندرويد معاً في مجلد النظام الرسمي
+      - name: Install Required NDK Versions
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;28.2.13676358"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;28.2.13676358" "ndk;27.0.12077973"
 
       # Step 7: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 8: Configure Keystore and Force Clear Old Local Properties
+      # Step 8: Configure Keystore and SDK Path ONLY (No forced ndk.dir)
       - name: Configure Keystore and Environment Properties
         run: |
           # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
@@ -60,12 +60,12 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=app/release.keystore" >> android/key.properties
           
-          # مسح ملف الخصائص تماماً وإعادة بنائه بالمسار الافتراضي للنظام لمنع تشتت الـ Gradle
+          # السر هنا: نكتب فقط مسار الـ SDK ونحذف تماماً سطر ndk.dir القسري
+          # نظام أندرويد الحديث سيبحث تلقائياً في مجلد الـ SDK ويختار الإصدار المناسب لكل إضافة على حدة
           rm -f android/local.properties
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          echo "ndk.dir=$ANDROID_HOME/ndk/28.2.13676358" >> android/local.properties
 
-      # Step 9: Compile release APK (الآن سيتطابق الإصدار مع النظام تماماً وينجح البناء)
+      # Step 9: Compile release APK (الآن ستعمل البيئة بمرونة تامة وتنجح)
       - name: Build APK
         run: flutter build apk --release --android-skip-build-dependency-validation
 
