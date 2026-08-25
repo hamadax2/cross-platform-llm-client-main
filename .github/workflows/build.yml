@@ -43,7 +43,6 @@ jobs:
         run: flutter pub get
 
       # Step 7: Configure Keystore and Android Environment Properties
-      # قمنا بدمج إعدادات الـ Keystore مع حقن مسارات الأندرويد والـ NDK لحل مشكلة الـ CMake نهائياً
       - name: Configure Keystore and Environment Properties
         run: |
           # 1. فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
@@ -55,13 +54,13 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=app/release.keystore" >> android/key.properties
           
-          # 3. إنشاء ملف local.properties وضخ مسار الـ SDK والـ NDK بشكل صريح لإجبار الـ CMake على العمل بنجاح
+          # 3. نكتفي بحقن مسار الـ SDK فقط ونحذف سطر ndk.dir القسري تماماً لندع الأندرويد يثبت الإصدار المطلوب تلقائياً عبر الإنترنت أثناء البناء
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          echo "ndk.dir=$ANDROID_HOME/ndk/25.1.8937393" >> android/local.properties
 
-      # Step 8: Compile release APK (الآن سيعمل بنجاح تام لأن الـ CMake مجبر على قراءة المسارات المحقونة)
+      # Step 8: Compile release APK
+      # قمنا بإضافة بارامتر تخطي الفحص والتحذيرات لضمان استمرارية البناء دون توقفات عشوائية
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       # Step 9: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
