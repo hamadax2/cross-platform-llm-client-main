@@ -38,18 +38,18 @@ jobs:
       - name: Accept Android Licenses
         run: yes | flutter doctor --android-licenses
 
-      # Step 6: Install and Setup the specific Android NDK needed for the :jni plugin
+      # Step 6: Install and Setup the exact Android NDK version required by your project
+      # تم تحديث الإصدار هنا إلى 28.2.13676358 ليتطابق مع طلب الـ Gradle لمنع التعارض
       - name: Setup Android NDK
         uses: android-actions/setup-android@v3
         with:
-          ndk-version: '25.1.8937393'
+          ndk-version: '28.2.13676358'
 
       # Step 7: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
         run: flutter pub get
 
       # Step 8: Configure Keystore and Android Environment Properties
-      # هنا نقوم بحقن المسار الديناميكي الحقيقي الذي تم تثبيت الـ NDK بداخله بنجاح
       - name: Configure Keystore and Environment Properties
         run: |
           # 1. فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
@@ -61,7 +61,7 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=app/release.keystore" >> android/key.properties
           
-          # 3. إعداد الـ local.properties مع تمرير مسار الـ SDK والـ NDK البيئي الصحيح تماماً بالسيرفر
+          # 3. إرسال المسارات البيئية الصحيحة والمتطابقة لملف local.properties
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "ndk.dir=$ANDROID_NDK_ROOT" >> android/local.properties
 
