@@ -1,0 +1,47 @@
+name: Flutter Android APK CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Clone the repository onto the runner
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Java Environment needed for Android Gradle builds
+      - name: Set up Java Development Kit (JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Step 3: Set up the Flutter framework environment
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable' # Options: 'stable', 'beta', or 'master'
+
+      # Step 4: Download dependencies defined in pubspec.yaml
+      - name: Install dependencies
+        run: flutter pub get
+
+
+      # Step 5: Compile release APK split per ABI for optimized file sizes
+      - name: Build APK
+        run: flutter build apk --release
+
+      # Step 6: Upload the compiled binaries to GitHub Artifacts
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
