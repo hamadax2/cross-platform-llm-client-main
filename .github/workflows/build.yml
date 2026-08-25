@@ -29,16 +29,21 @@ jobs:
         with:
           channel: 'stable'
 
-      # Step 4: Accept Android Licenses through Flutter CLI directly
-      # هذه الخطوة آمنة وتغني تماماً عن استخدام sdkmanager لتجنب خطأ command not found
+      # Step 4: Configure Android SDK Path for Flutter CLI (حل مشكلة الـ CMake البديل والسليم)
+      # هنا نخبر فلاتر بمكان الـ SDK داخل نظام سيرفر GitHub ليربط الـ Plugins المحلية به تلقائياً
+      - name: Configure Android SDK Path
+        run: |
+          flutter config --android-sdk $ANDROID_HOME
+
+      # Step 5: Accept Android Licenses through Flutter CLI directly
       - name: Accept Android Licenses
         run: yes | flutter doctor --android-licenses
 
-      # Step 5: Download dependencies defined in pubspec.yaml
+      # Step 6: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 6: Configure Keystore and Properties to bypass Kotlin DSL Gradle check
+      # Step 7: Configure Keystore and Properties to bypass Kotlin DSL Gradle check
       - name: Configure Keystore and Properties
         run: |
           # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
@@ -52,12 +57,11 @@ jobs:
           # إرسال مسار الـ Keystore النسبي ليفهمه ملف الـ build.gradle.kts الخاص بك
           echo "storeFile=app/release.keystore" >> android/key.properties
 
-      # Step 7: Compile release APK
-      # إذا استمرت مشكلة الـ CMake مع الـ plugin المحلي، فإن تمرير مسار الـ SDK يُجبر Gradle على تحميل التوليفة الصحيحة تلقائياً
+      # Step 8: Compile release APK (أمر نظيف وسيعمل الآن بنجاح)
       - name: Build APK
-        run: flutter build apk --release --android-sdk=$ANDROID_HOME
+        run: flutter build apk --release
         
-      # Step 8: Upload the compiled binaries to GitHub Artifacts
+      # Step 9: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
