@@ -33,16 +33,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 5: Configure Keystore and Properties from GitHub Secrets
+      # Step 5: Configure Keystore and Properties to bypass Kotlin DSL Gradle check
       - name: Configure Keystore and Properties
         run: |
           # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
           
-          # إنشاء ملف key.properties بالبيانات المطلوبة ليتوافق مع كود Gradle الخاص بك
+          # إنشاء ملف key.properties في الجذر (android/key.properties) ليتوافق مع rootProject.file("key.properties")
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          
+          # المسار هنا يتم قراءته برمجياً من داخل android/app/build.gradle.kts عبر الدالة file()
+          # ولأن الملف يتم قراءته من سياق مجلد app، يجب الإشارة للملف بـ app/release.keystore أو المسار الكامل
           echo "storeFile=app/release.keystore" >> android/key.properties
 
       # Step 6: Compile release APK split per ABI for optimized file sizes
