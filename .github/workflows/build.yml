@@ -29,12 +29,10 @@ jobs:
         with:
           channel: 'stable'
 
-      # Step 4: Accept Android Licenses & Install CMake Using Absolute Path
-      - name: Accept Android Licenses & Setup SDK Tools
-        run: |
-          # استخدام المسار الكامل لـ sdkmanager المدمج في نظام أندرويد على سيرفر GitHub
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "cmake;3.22.1"
+      # Step 4: Accept Android Licenses through Flutter CLI directly
+      # هذه الخطوة آمنة وتغني تماماً عن استخدام sdkmanager لتجنب خطأ command not found
+      - name: Accept Android Licenses
+        run: yes | flutter doctor --android-licenses
 
       # Step 5: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
@@ -55,9 +53,10 @@ jobs:
           echo "storeFile=app/release.keystore" >> android/key.properties
 
       # Step 7: Compile release APK
+      # إذا استمرت مشكلة الـ CMake مع الـ plugin المحلي، فإن تمرير مسار الـ SDK يُجبر Gradle على تحميل التوليفة الصحيحة تلقائياً
       - name: Build APK
-        run: flutter build apk --release
-
+        run: flutter build apk --release --android-sdk=$ANDROID_HOME
+        
       # Step 8: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
