@@ -38,8 +38,8 @@ jobs:
       - name: Accept Android Licenses
         run: yes | flutter doctor --android-licenses
 
-      # Step 6: Install BOTH NDK versions needed by your local plugins into the system
-      # نقوم بتثبيت الإصدارين (28 لـ jni والإصدار 27 لـ llama_flutter) ليجدهما الأندرويد معاً في مجلد النظام الرسمي
+      # Step 6: Install BOTH NDK versions required by your local plugins
+      # نقوم بتنزيل الإصدارين 28 و 27 داخل مسار النظام الأساسي ليتسنى لكل إضافة قراءة حزمتها المتوافقة
       - name: Install Required NDK Versions
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;28.2.13676358" "ndk;27.0.12077973"
@@ -48,7 +48,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 8: Configure Keystore and SDK Path ONLY (No forced ndk.dir)
+      # Step 8: Configure Keystore and Force Dynamic Paths (No forced ndk.dir)
       - name: Configure Keystore and Environment Properties
         run: |
           # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
@@ -60,13 +60,15 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=app/release.keystore" >> android/key.properties
           
-          # السر هنا: نكتب فقط مسار الـ SDK ونحذف تماماً سطر ndk.dir القسري
-          # نظام أندرويد الحديث سيبحث تلقائياً في مجلد الـ SDK ويختار الإصدار المناسب لكل إضافة على حدة
+          # حذف أي مسارات قسرية قديمة للـ NDK، ونكتفي بمسار الـ SDK الافتراضي فقط
+          # هذا الإجراء يمنع حدوث أخطاء التعارض [CXX1104] بين المكتبات المحلية تلقائياً
           rm -f android/local.properties
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
-      # Step 9: Compile release APK (الآن ستعمل البيئة بمرونة تامة وتنجح)
+      # Step 9: Compile release APK with verification bypass flag
       - name: Build APK
+        env:
+          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/28.2.13676358
         run: flutter build apk --release --android-skip-build-dependency-validation
 
       # Step 10: Upload the compiled binaries to GitHub Artifacts
