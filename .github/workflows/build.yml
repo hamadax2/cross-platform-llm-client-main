@@ -33,12 +33,23 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Step 5: Configure Keystore and Properties from GitHub Secrets
+      - name: Configure Keystore and Properties
+        run: |
+          # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+          
+          # إنشاء ملف key.properties بالبيانات المطلوبة ليتوافق مع كود Gradle الخاص بك
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=app/release.keystore" >> android/key.properties
 
-      # Step 5: Compile release APK split per ABI for optimized file sizes
+      # Step 6: Compile release APK split per ABI for optimized file sizes
       - name: Build APK
         run: flutter build apk --release
 
-      # Step 6: Upload the compiled binaries to GitHub Artifacts
+      # Step 7: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
