@@ -29,11 +29,12 @@ jobs:
         with:
           channel: 'stable'
 
-      # Step 4: Accept Android Licenses & Install CMake (مهمة لحل مشكلة الـ C++ Plugin)
+      # Step 4: Accept Android Licenses & Install CMake Using Absolute Path
       - name: Accept Android Licenses & Setup SDK Tools
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager "cmake;3.22.1"
+          # استخدام المسار الكامل لـ sdkmanager المدمج في نظام أندرويد على سيرفر GitHub
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "cmake;3.22.1"
 
       # Step 5: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
