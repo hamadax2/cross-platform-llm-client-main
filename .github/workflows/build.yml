@@ -27,32 +27,37 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # Options: 'stable', 'beta', or 'master'
+          channel: 'stable'
 
-      # Step 4: Download dependencies defined in pubspec.yaml
+      # Step 4: Accept Android Licenses & Install CMake (مهمة لحل مشكلة الـ C++ Plugin)
+      - name: Accept Android Licenses & Setup SDK Tools
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "cmake;3.22.1"
+
+      # Step 5: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 5: Configure Keystore and Properties to bypass Kotlin DSL Gradle check
+      # Step 6: Configure Keystore and Properties to bypass Kotlin DSL Gradle check
       - name: Configure Keystore and Properties
         run: |
           # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
           
-          # إنشاء ملف key.properties في الجذر (android/key.properties) ليتوافق مع rootProject.file("key.properties")
+          # إنشاء ملف key.properties في جذر مجلد android ليتوافق مع rootProject.file("key.properties")
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           
-          # المسار هنا يتم قراءته برمجياً من داخل android/app/build.gradle.kts عبر الدالة file()
-          # ولأن الملف يتم قراءته من سياق مجلد app، يجب الإشارة للملف بـ app/release.keystore أو المسار الكامل
+          # إرسال مسار الـ Keystore النسبي ليفهمه ملف الـ build.gradle.kts الخاص بك
           echo "storeFile=app/release.keystore" >> android/key.properties
 
-      # Step 6: Compile release APK split per ABI for optimized file sizes
+      # Step 7: Compile release APK
       - name: Build APK
         run: flutter build apk --release
 
-      # Step 7: Upload the compiled binaries to GitHub Artifacts
+      # Step 8: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
