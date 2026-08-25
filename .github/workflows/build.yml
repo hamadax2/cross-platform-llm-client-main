@@ -38,17 +38,17 @@ jobs:
       - name: Accept Android Licenses
         run: yes | flutter doctor --android-licenses
 
-      # Step 6: Install and Setup the exact Android NDK version 28.2.13676358
-      - name: Setup Android NDK
-        uses: android-actions/setup-android@v3
-        with:
-          ndk-version: '28.2.13676358'
+      # Step 6: Force Install the exact NDK version into the system's SDK path
+      # هنا نقوم بإجبار خادم GitHub على تنزيل الإصدار المتوافق داخل المجلد الافتراضي مباشرة وتحديثه
+      - name: Force Install Exact NDK Version
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;28.2.13676358"
 
       # Step 7: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 8: Configure Keystore and Force Dynamic Local Properties
+      # Step 8: Configure Keystore and Force Clear Old Local Properties
       - name: Configure Keystore and Environment Properties
         run: |
           # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
@@ -60,15 +60,13 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=app/release.keystore" >> android/key.properties
           
-          # حذف أي ملف كاش قديم وإجبار السيرفر على استخدام المسارات البيئية المحدثة
+          # مسح ملف الخصائص تماماً وإعادة بنائه بالمسار الافتراضي للنظام لمنع تشتت الـ Gradle
           rm -f android/local.properties
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          echo "ndk.dir=$ANDROID_NDK_ROOT" >> android/local.properties
+          echo "ndk.dir=$ANDROID_HOME/ndk/28.2.13676358" >> android/local.properties
 
-      # Step 9: Compile release APK with explicit NDK environment injection
+      # Step 9: Compile release APK (الآن سيتطابق الإصدار مع النظام تماماً وينجح البناء)
       - name: Build APK
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
         run: flutter build apk --release --android-skip-build-dependency-validation
 
       # Step 10: Upload the compiled binaries to GitHub Artifacts
