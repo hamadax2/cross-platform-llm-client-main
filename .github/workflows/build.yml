@@ -38,31 +38,38 @@ jobs:
       - name: Accept Android Licenses
         run: yes | flutter doctor --android-licenses
 
-      # Step 6: Download dependencies defined in pubspec.yaml
+      # Step 6: Install and Setup the specific Android NDK needed for the :jni plugin
+      # هذا الأكشن الرسمي يقوم بتحميل وتثبيت الـ NDK المطلوب بدقة داخل الـ Runner بشكل مضمون 100%
+      - name: Setup Android NDK
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: '25.1.8937393'
+
+      # Step 7: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 7: Configure Keystore and Android Environment Properties
+      # Step 8: Configure Keystore and Android Environment Properties
       - name: Configure Keystore and Environment Properties
         run: |
           # 1. فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
           
-          # 2. إنشاء ملف key.properties في جذر مجلد android ليتوافق مع كود Gradle الخاص بك
+          # 2. إنشاء ملف key.properties ليتوافق مع كود Gradle الخاص بك
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=app/release.keystore" >> android/key.properties
           
-          # 3. نكتفي بحقن مسار الـ SDK فقط ونحذف سطر ndk.dir القسري تماماً لندع الأندرويد يثبت الإصدار المطلوب تلقائياً عبر الإنترنت أثناء البناء
+          # 3. إعداد الـ local.properties مع تمرير مسار الـ SDK والـ NDK المثبت حديثاً
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "ndk.dir=$ANDROID_HOME/ndk/25.1.8937393" >> android/local.properties
 
-      # Step 8: Compile release APK
-      # قمنا بإضافة بارامتر تخطي الفحص والتحذيرات لضمان استمرارية البناء دون توقفات عشوائية
+      # Step 9: Compile release APK with verification bypass flag
       - name: Build APK
         run: flutter build apk --release --android-skip-build-dependency-validation
 
-      # Step 9: Upload the compiled binaries to GitHub Artifacts
+      # Step 10: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
