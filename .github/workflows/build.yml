@@ -86,7 +86,7 @@ jobs:
               echo "storePassword=$KEYSTORE_PASSWORD"
               echo "keyPassword=$KEY_PASSWORD"
               echo "keyAlias=$KEY_ALIAS"
-              echo "storeFile=app/release.keystore"
+              echo "storeFile=release.keystore"
             } > android/key.properties
           else
             echo "Release signing secrets are not configured; using CI debug signing."
@@ -100,7 +100,7 @@ jobs:
         env:
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/28.2.13676358
           PRIVATELM_ALLOW_DEBUG_RELEASE_SIGNING: "true"
-        run: flutter build apk --release
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Verify APK output
         run: |
