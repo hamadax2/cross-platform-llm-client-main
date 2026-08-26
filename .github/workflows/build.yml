@@ -2,9 +2,10 @@ name: Flutter Android APK CI
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "v0/workflow-automation-c0b93237" ]
   pull_request:
     branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -31,20 +32,22 @@ jobs:
         with:
           channel: 'stable'
 
-      # Step 4: Configure Android SDK Path for Flutter CLI
+      # Step 4: Install Android SDK packages required by Flutter and native plugins.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Configure Android SDK Path
-        run: |
-          flutter config --android-sdk $ANDROID_HOME
+        run: flutter config --android-sdk "$ANDROID_HOME"
 
       # Step 5: Accept Android SDK licenses non-interactively.
       - name: Accept Android Licenses
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+        run: yes | sdkmanager --licenses
 
-      # Step 6: Install BOTH NDK versions required by the native plugins.
+      # Step 6: Install required Android SDK and NDK versions.
       # نقوم بتنزيل الإصدارين 28 و 27 داخل مسار النظام الأساسي ليتسنى لكل إضافة قراءة حزمتها المتوافقة
-      - name: Install Required NDK Versions
+      - name: Install Android build packages
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;28.2.13676358" "ndk;27.0.12077973"
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;28.2.13676358" "ndk;27.0.12077973"
 
       # Step 7: Download dependencies defined in pubspec.yaml
       - name: Install dependencies
@@ -71,6 +74,11 @@ jobs:
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/28.2.13676358
           PRIVATELM_ALLOW_DEBUG_RELEASE_SIGNING: "true"
         run: flutter build apk --release
+
+      - name: Verify APK output
+        run: |
+          test -s build/app/outputs/flutter-apk/app-release.apk
+          file build/app/outputs/flutter-apk/app-release.apk
 
       # Step 10: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
