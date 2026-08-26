@@ -88,6 +88,11 @@ jobs:
               echo "keyAlias=$KEY_ALIAS"
               echo "storeFile=release.keystore"
             } > android/key.properties
+            if ! keytool -list -keystore android/app/release.keystore \
+              -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null 2>&1; then
+              echo "Configured keystore does not contain KEY_ALIAS; falling back to debug signing."
+              rm -f android/key.properties android/app/release.keystore
+            fi
           else
             echo "Release signing secrets are not configured; using CI debug signing."
           fi
