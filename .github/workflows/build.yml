@@ -12,9 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Clone the repository onto the runner
+      # Step 1: Clone the repository, including the native plugin submodule.
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # Step 2: Set up Java Environment needed for Android Gradle builds
       - name: Set up Java Development Kit (JDK)
@@ -34,11 +36,11 @@ jobs:
         run: |
           flutter config --android-sdk $ANDROID_HOME
 
-      # Step 5: Accept Android Licenses through Flutter CLI directly
+      # Step 5: Accept Android SDK licenses non-interactively.
       - name: Accept Android Licenses
-        run: yes | flutter doctor --android-licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
 
-      # Step 6: Install BOTH NDK versions required by your local plugins
+      # Step 6: Install BOTH NDK versions required by the native plugins.
       # نقوم بتنزيل الإصدارين 28 و 27 داخل مسار النظام الأساسي ليتسنى لكل إضافة قراءة حزمتها المتوافقة
       - name: Install Required NDK Versions
         run: |
@@ -48,28 +50,27 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 8: Configure Keystore and Force Dynamic Paths (No forced ndk.dir)
-      - name: Configure Keystore and Environment Properties
+      # Step 8: Configure signing only when all release secrets are available.
+      - name: Configure release signing
+        if: ${{ secrets.KEYSTORE_BASE64 != '' && secrets.KEYSTORE_PASSWORD != '' && secrets.KEY_PASSWORD != '' && secrets.KEY_ALIAS != '' }}
         run: |
-          # فك تشفير ملف الـ Keystore وحفظه داخل مجلد android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
-          
-          # إنشاء ملف key.properties ليتوافق مع كود Gradle الخاص بك
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          echo "storeFile=app/release.keystore" >> android/key.properties
-          
-          # حذف أي مسارات قسرية قديمة للـ NDK، ونكتفي بمسار الـ SDK الافتراضي فقط
-          # هذا الإجراء يمنع حدوث أخطاء التعارض [CXX1104] بين المكتبات المحلية تلقائياً
-          rm -f android/local.properties
-          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          {
+            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}"
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}"
+            echo "storeFile=app/release.keystore"
+          } > android/key.properties
 
-      # Step 9: Compile release APK with verification bypass flag
+      - name: Configure Android SDK path
+        run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      # Step 9: Build a release APK. Unsigned CI builds use the Gradle debug key.
       - name: Build APK
         env:
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/28.2.13676358
-        run: flutter build apk --release --android-skip-build-dependency-validation
+          PRIVATELM_ALLOW_DEBUG_RELEASE_SIGNING: "true"
+        run: flutter build apk --release
 
       # Step 10: Upload the compiled binaries to GitHub Artifacts
       - name: Upload APK Artifact
