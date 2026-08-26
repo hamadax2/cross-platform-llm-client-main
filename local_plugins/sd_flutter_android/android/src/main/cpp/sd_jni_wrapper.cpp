@@ -472,9 +472,9 @@ SD_FFI_API void* sd_ffi_init_ex(const char* model_path,
     params.offload_params_to_cpu = offload_params_to_cpu;
     params.enable_mmap = enable_mmap;
     params.keep_vae_on_cpu = keep_vae_on_cpu;
-    if (max_vram > 0.0f) {
-        params.max_vram = max_vram;
-    }
+    // max_vram is retained in the FFI API for compatibility, but the pinned
+    // stable-diffusion.cpp revision no longer exposes it in sd_ctx_params_t.
+    (void)max_vram;
 
     // NOTE: vae_tiling is NOT a member of sd_ctx_params_t.
     // It belongs to sd_img_gen_params_t and is applied per-generation in sd_ffi_generate().
