@@ -53,17 +53,27 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Step 8: Configure signing only when all release secrets are available.
+      # Step 8: Configure signing when release secrets are available.
+      # The shell guard is intentional: GitHub Actions does not allow the
+      # secrets context directly in a step-level if expression.
       - name: Configure release signing
-        if: ${{ secrets.KEYSTORE_BASE64 != '' && secrets.KEYSTORE_PASSWORD != '' && secrets.KEY_PASSWORD != '' && secrets.KEY_ALIAS != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
-          {
-            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}"
-            echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
-            echo "keyAlias=${{ secrets.KEY_ALIAS }}"
-            echo "storeFile=app/release.keystore"
-          } > android/key.properties
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_PASSWORD" ] && [ -n "$KEY_ALIAS" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+            {
+              echo "storePassword=$KEYSTORE_PASSWORD"
+              echo "keyPassword=$KEY_PASSWORD"
+              echo "keyAlias=$KEY_ALIAS"
+              echo "storeFile=app/release.keystore"
+            } > android/key.properties
+          else
+            echo "Release signing secrets are not configured; using CI debug signing."
+          fi
 
       - name: Configure Android SDK path
         run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
