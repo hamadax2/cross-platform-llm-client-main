@@ -57,9 +57,10 @@ jobs:
           git submodule update --init --recursive
           if [ ! -f local_plugins/sd_flutter_android/android/src/main/cpp/stable-diffusion.cpp/CMakeLists.txt ]; then
             rm -rf local_plugins/sd_flutter_android/android/src/main/cpp/stable-diffusion.cpp
-            git clone --depth 1 --recurse-submodules --shallow-submodules \
+            git clone --recurse-submodules --shallow-submodules \
               https://github.com/leejet/stable-diffusion.cpp.git \
               local_plugins/sd_flutter_android/android/src/main/cpp/stable-diffusion.cpp
+            git -C local_plugins/sd_flutter_android/android/src/main/cpp/stable-diffusion.cpp checkout --detach 28ef93c0e172a29b0dcbd131ec8e34ecbd2b98e2
             git -C local_plugins/sd_flutter_android/android/src/main/cpp/stable-diffusion.cpp submodule update --init --recursive
           fi
           test -f local_plugins/sd_flutter_android/android/src/main/cpp/stable-diffusion.cpp/CMakeLists.txt
